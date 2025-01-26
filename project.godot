@@ -12,5 +12,10 @@ config_version=5
 
 config/name="Godot Matrix SDK"
 config/features=PackedStringArray("4.4", "Forward Plus")
-boot_splash/image="uid://ds1d78ohgmmg1"
-config/icon="uid://b1jymgeabim03"
+boot_splash/image="res://godot_matrix_sdk_icon.png"
+boot_splash/fullsize=false
+config/icon="res://godot_matrix_sdk_icon.svg"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/godot_matrix_sdk/plugin.cfg")
