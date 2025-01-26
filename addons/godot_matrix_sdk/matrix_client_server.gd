@@ -7,6 +7,7 @@ class_name MatrixClientServer
 @export var homeserver: String
 ## Matrix Access Token
 @export var access_token: String
+
 var mxid: String
 var localpart: String
 var homeserver_delegated: String
@@ -32,115 +33,6 @@ func _int_to_string(int_to_str: int) -> String:
 	else:
 		return ""
 
-## Validate provided string is a MXID (`@exanple:matrix.org`)
-func mxid_validate(matrix_id: String) -> bool:
-	var validation: RegEx = RegEx.new()
-	validation.compile(r"^@[a-zA-Z0-9._=-]+:[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
-	if validation.search(matrix_id):
-		return true
-	else:
-		return false
-
-## Split a MXID (`@exanple:matrix.org`) into localpart and homeserver
-## Used by `mxid_to_localpart` and `mxid_to_homeserver`
-func _mxid_split(matrix_id: String, to: bool) -> MatrixClientServerResponse:
-	if self.mxid_validate(matrix_id) == false:
-		return MatrixClientServerResponse.new(FAILED, "MXID validation failed. Use `mxid_validate()` for true/false validation of MXID.")
-
-	var requested_part: int = 0 if to else 1
-	var split: RegEx = RegEx.new()
-	split.compile(r"^@([a-zA-Z0-9._=-]+):([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})$")
-	var split_result: RegExMatch = split.search(matrix_id)
-	if split_result:
-		var split_array: Array = [split_result.get_string(1),split_result.get_string(2)]
-		return MatrixClientServerResponse.new(OK, "", split_array[requested_part])
-	else:
-		return MatrixClientServerResponse.new(FAILED, "Split of validated MXID failed! Something went wrong!")
-
-## Return localpart of provided `matrix_id`
-## I.e. `@example:matrix.org` returns `example`
-func mxid_to_localpart(matrix_id: String) -> MatrixClientServerResponse:
-	return _mxid_split(matrix_id, true)
-
-## Return homeserver of provided `matrix_id`
-## I.e. `@example:matrix.org` returns `matrix.org`
-func mxid_to_homeserver(matrix_id: String) -> MatrixClientServerResponse:
-	return _mxid_split(matrix_id, false)
-
-## Validate the provided `url` string is a valid URL
-func url_validate(url: String) -> bool:
-	var validation: RegEx = RegEx.new()
-	validation.compile(r"^((http|https):\/\/)?([a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,})(:([0-9]{1,5}))?(\/([^\s]*))?$")
-	if validation.search(url):
-		return true
-	else:
-		return false
-
-## Format provided `url` string to confirm protocol (`http` / `https`) and no trailing `/`
-## If provided `url` has no protocol, `https://` is added by default
-func url_formatter(url: String) -> MatrixClientServerResponse:
-	var formatter: RegEx = RegEx.new()
-	# URL Pattern Matching Group Examples
-	# Group 1: `http://` or `https://`
-	# Group 2: `http` or `https`
-	# Group 3: `sub.domain.com`
-	# Group 5: `:1234`
-	# Group 6: `1234`
-	# Group 7: `/path`
-	# Group 8: `path`
-	formatter.compile(r"^((http|https):\/\/)?([a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,})(:([0-9]{1,5}))?(\/([^\s]*))?$")
-	var formatter_result: RegExMatch = formatter.search(url)
-	if formatter_result:
-		var protocol: String = formatter_result.get_string(1)
-		var domain: String = formatter_result.get_string(3)
-		var port: String = formatter_result.get_string(5)
-		var path: String = formatter_result.get_string(7)
-		if path.ends_with("/"):
-			path = path.left(-1)
-		if protocol == "":
-			protocol = "https://"
-		return MatrixClientServerResponse.new(OK, "", "{protocol}{domain}{port}{path}".format({"protocol":protocol,"domain":domain,"port":port,"path":path}))
-	else:
-		return MatrixClientServerResponse.new(FAILED, "Provided string is not a valid URL.")
-
-
-#func get_account_data(user_mxid: String, data_type: String) -> MatrixClientServerResponse:
-	#var http_request: HTTPRequest = _request()
-	#var url = homeserver + "/_matrix/client/v3/user/" + user_mxid + "/account_data/" + data_type
-	#var request = http_request.request(url, headers, HTTPClient.METHOD_GET)
-#
-	#if request != OK:
-		#http_request.queue_free()
-		#return MatrixClientServerResponse.new(ERR_QUERY_FAILED, "Error initiating HTTPRequest.")
-#
-	#var account_data_http_response : Array = await http_request.request_completed
-	#var json: JSON = JSON.new()
-	#var json_parsed: int = json.parse(account_data_http_response[3].get_string_from_utf8())
-#
-	#if json_parsed != OK:
-		#http_request.queue_free()
-		#return MatrixClientServerResponse.new(ERR_PARSE_ERROR, "Error parsing response body: " + account_data_http_response[3].get_string_from_utf8())
-#
-	#var response_body: Dictionary = json.get_data()
-	#var account_data : Dictionary = {
-		#"response_status": account_data_http_response[0],
-		#"response_code": account_data_http_response[1],
-		#"headers": account_data_http_response[2],
-		#"body": response_body,
-	#}
-#
-	#http_request.queue_free()
-#
-	#if account_data.response_code == 200:
-		#return MatrixClientServerResponse.new(OK, "The account data content for the given type.", account_data)
-	#elif account_data.response_code == 401:
-		#return MatrixClientServerResponse.new(ERR_UNAUTHORIZED, "The homeserver requires additional authentication information. Errcode: `M_UNAUTHORIZED`.", account_data)
-	#elif account_data.response_code == 403:
-		#return MatrixClientServerResponse.new(ERR_UNAUTHORIZED, "The access token provided is not authorized to retrieve this user's account data. Errcode: `M_FORBIDDEN`.", account_data)
-	#elif account_data.response_code == 404:
-		#return MatrixClientServerResponse.new(ERR_DOES_NOT_EXIST, "No account data has been provided for this user with the given `type`. Errcode: `M_NOT_FOUND`.", account_data)
-	#else:
-		#return MatrixClientServerResponse.new(ERR_DOES_NOT_EXIST, "Unknown response code returned - " + str(account_data.response_code) + ".")
 
 ############################################
 ## Matrix Client-Server Client Config API ##

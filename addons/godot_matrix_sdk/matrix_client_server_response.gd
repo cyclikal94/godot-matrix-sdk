@@ -1,9 +1,8 @@
 @icon("res://addons/godot_matrix_sdk/matrix_icon.svg")
-extends Resource
 class_name MatrixClientServerResponse
 
-var status: Error
-var message: String
+@export var status: Error
+@export var message: String
 var response: Variant
 
 func _init(error_status: Error, msg: String, resp: Variant = null):
