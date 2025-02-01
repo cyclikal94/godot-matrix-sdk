@@ -71,7 +71,7 @@ static func url_validate(url: String) -> bool:
 
 ## Format provided `url` string to confirm protocol (`http` / `https`) and no trailing `/`
 ## If provided `url` has no protocol, `https://` is added by default
-static func url_formatter(url: String) -> MatrixClientServerResponse:
+static func url_formatter(url: String, trail: bool = false) -> MatrixClientServerResponse:
 	if url_validate(url) == false:
 		return MatrixClientServerResponse.new(FAILED, "URL validation failed. Use `url_validate()` for true/false validation of URL.")
 	var formatter: RegEx = RegEx.new()
@@ -79,19 +79,20 @@ static func url_formatter(url: String) -> MatrixClientServerResponse:
 	# Group 1: `http://` or `https://`
 	# Group 2: `http` or `https`
 	# Group 3: `sub.domain.com`
-	# Group 5: `:1234`
-	# Group 6: `1234`
-	# Group 7: `/path`
-	# Group 8: `path`
-	formatter.compile(r"^((http|https):\/\/)?([a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,})(:([0-9]{1,5}))?(\/([^\s]*))?$")
+	# Group 4: `:1234`
+	# Group 5: `1234`
+	# Group 6: `/path`
+	# Group 7: `path`
+	formatter.compile(r"^((http|https):\/\/)?([a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,})(:([\d]{1,5}))?(\/([^\s:]*))?$")
 	var formatter_result: RegExMatch = formatter.search(url)
 	if formatter_result:
 		var protocol: String = formatter_result.get_string(1)
 		var domain: String = formatter_result.get_string(3)
-		var port: String = formatter_result.get_string(6)
-		var path: String = formatter_result.get_string(7)
-		if path.ends_with("/"):
-			path = path.left(-1)
+		var port: String = formatter_result.get_string(5)
+		var path: String = formatter_result.get_string(6)
+		if not trail:
+			if path.ends_with("/"):
+				path = path.left(-1)
 		if protocol == "":
 			protocol = "https://"
 		return MatrixClientServerResponse.new(OK, "", "{protocol}{domain}{port}{path}".format({"protocol":protocol,"domain":domain,"port":":" + port if port else "","path":path}))
