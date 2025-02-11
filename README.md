@@ -3,7 +3,7 @@
 # Godot Matrix SDK
 A Matrix SDK for Godot written in GDScript.
 
-Please note, this is a work in progress.
+Please note, this is a work in progress and is primarily for my learning purposes.
 
 ## Features
 
